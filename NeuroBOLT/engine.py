@@ -44,11 +44,11 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     if ch_names is not None:
         input_chans = utils.get_input_chans(ch_names)
     model.train(True)
-    metric_logger = utils.MetricLogger(delimiter="  ")
+    metric_logger = utils.MetricLogger(delimiter="  ", silent_mode=True)  # Enable silent mode
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     metric_logger.add_meter('min_lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
-    print_freq = 10
+    print_freq = 10000  # Changed to reduce verbose output - only prints at end of epoch
 
     if loss_scaler is None:
         model.zero_grad()
@@ -168,14 +168,14 @@ def evaluate(data_loader, model, device, header='Test:', ch_names=None, metrics=
         input_chans = None
     criterion = torch.nn.MSELoss()
 
-    metric_logger = utils.MetricLogger(delimiter="  ")
+    metric_logger = utils.MetricLogger(delimiter="  ", silent_mode=True)  # Enable silent mode
     # header = 'Test:'
 
     # switch to evaluation mode
     model.eval()
     pred = []
     true = []
-    for step, batch in enumerate(metric_logger.log_every(data_loader, 10, header)):
+    for step, batch in enumerate(metric_logger.log_every(data_loader, 10000, header)):  # Reduced verbosity
         EEG = batch[0]
         target = batch[-1]
         EEG = EEG.float().to(device, non_blocking=True) / 100

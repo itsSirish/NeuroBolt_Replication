@@ -135,9 +135,10 @@ class SmoothedValue(object):
 
 
 class MetricLogger(object):
-    def __init__(self, delimiter="\t"):
+    def __init__(self, delimiter="\t", silent_mode=False):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
+        self.silent_mode = silent_mode
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
@@ -199,17 +200,19 @@ class MetricLogger(object):
             if i % print_freq == 0 or i == len(iterable) - 1:
                 eta_seconds = iter_time.global_avg * (len(iterable) - i)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
-                if torch.cuda.is_available():
-                    print(log_msg.format(
-                        i, len(iterable), eta=eta_string,
-                        meters=str(self),
-                        time=str(iter_time), data=str(data_time),
-                        memory=torch.cuda.max_memory_allocated() / MB))
-                else:
-                    print(log_msg.format(
-                        i, len(iterable), eta=eta_string,
-                        meters=str(self),
-                        time=str(iter_time), data=str(data_time)))
+                # Only print if not in silent mode and (print_freq is small or at end of epoch)
+                if not self.silent_mode and (print_freq <= 100 or i == len(iterable) - 1):
+                    if torch.cuda.is_available():
+                        print(log_msg.format(
+                            i, len(iterable), eta=eta_string,
+                            meters=str(self),
+                            time=str(iter_time), data=str(data_time),
+                            memory=torch.cuda.max_memory_allocated() / MB))
+                    else:
+                        print(log_msg.format(
+                            i, len(iterable), eta=eta_string,
+                            meters=str(self),
+                            time=str(iter_time), data=str(data_time)))
             i += 1
             end = time.time()
         total_time = time.time() - start_time
